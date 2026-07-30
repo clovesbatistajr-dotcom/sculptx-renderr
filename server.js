@@ -15,18 +15,7 @@ const piscina = new Piscina({
   filename: path.join(__dirname, 'worker.js'),
 });
 
-// Função para gerar código aleatório
-function codigoAleatório(len = 6) {
-  const personagens = 'ABCDEFGHJKMNPQRSTU';
-  let codigo = '';
-  for (let eu = 0; eu < len; eu++) {
-    codigo += personagens[Math.floor(Math.random() * personagens.length)];
-  }
-  return codigo;
-}
-
-// API: USAR-CÓDIGO (Cliente)
-// =================================================================
+// API: CHECK-CODE (Valida se código existe e não foi usado)
 app.post('/api/check-code', async (req, res) => {
   try {
     const { codigo } = req.body;
@@ -57,7 +46,7 @@ app.post('/api/check-code', async (req, res) => {
   }
 });
 
-// API: USE-CODE (Marca como usado após validação)
+// API: USE-CODE (Marca código como usado após validação)
 app.post('/api/use-code', async (req, res) => {
   try {
     const { codigo, buyerName, planoData } = req.body;
@@ -66,14 +55,10 @@ app.post('/api/use-code', async (req, res) => {
       return res.status(400).json({ OK: false, razão: 'Código não fornecido' });
     }
 
-    // Marca como usado - APENAS esse código
+    // Marca como usado - APENAS esse código específico
     const agora = new Date();
     await piscina.consulta(
-UPDATE codigos SET usado = true, usado_em = ?, nome_do_comprador = COALESCE(?, "nulo") WHERE UPPER(codigo) = UPPER(?)  [agora, buyerName || null, codigo]
-);
-
-);
-
+      'UPDATE codigos SET usado = true, usado_em = ?, nome_do_comprador = COALESCE(?, "nulo") WHERE UPPER(codigo) = UPPER(?)',
       [agora, buyerName || null, codigo]
     );
 
@@ -114,23 +99,10 @@ UPDATE codigos SET usado = true, usado_em = ?, nome_do_comprador = COALESCE(?, "
 });
 
 // API: GERAR-CÓDIGO (Administrador)
-// =================================================================
-app.publicar('/api/generate-code', checkAdmin, tentador => {
-  const { nome_do_comprador, email } = requisição.body;
-
-  // Função para gerar código aleatório
-  função codigoAleatório(len = 6) {
-    const personagens = 'ABCDEFGHJKMNPQRSTU';
-    deixar código = '';
-    para (deixar eu = 0; eu < len; eu++) {
-      código += personagens[Matemática.chão(Matemática.aleatório() * personagens.tamanho)];
-    }
-    retornar código;
-  }
+app.post('/api/generate-code', checkAdmin, (req, res) => {
+  const { nome_do_comprador, email } = req.body;
 
   try {
-    const { nome_do_comprador, email } = req.body;
-
     if (!nome_do_comprador || !email) {
       return res.status(400).json({ OK: false, razão: 'Nome e email obrigatórios' });
     }
@@ -141,19 +113,29 @@ app.publicar('/api/generate-code', checkAdmin, tentador => {
     piscina.consulta(
       'INSERT INTO codigos (codigo, nome_do_comprador, email, criado_em) VALUES (?, ?, ?, ?)',
       [codigo, nome_do_comprador, email, criadoEm]
-    ).então(() => {
+    ).then(() => {
       res.json({ OK: true, codigo, email });
-    }).capturar((erro) => {
-      console.erro('Erro ao gerar código:', erro.mensagem);
+    }).catch((erro) => {
+      console.error('Erro ao gerar código:', erro.message);
       res.status(500).json({ OK: false, razão: 'Erro ao gerar código' });
     });
   } catch (erro) {
-    console.erro('Erro em generate-code:', erro.mensagem);
+    console.error('Erro em generate-code:', erro.message);
     res.status(500).json({ OK: false, razão: 'Erro ao processar requisição' });
   }
 });
 
-// Middleware: Verificar admin
+// Função para gerar código aleatório
+function codigoAleatório(len = 6) {
+  const personagens = 'ABCDEFGHJKMNPQRSTU';
+  let código = '';
+  for (let eu = 0; eu < len; eu++) {
+    código += personagens[Math.floor(Math.random() * personagens.length)];
+  }
+  return código;
+}
+
+// Middleware: Verificar senha admin
 function checkAdmin(req, res, next) {
   const { senha } = req.query;
   if (senha === '01010924Clo#') {
