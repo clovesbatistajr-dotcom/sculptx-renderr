@@ -1,184 +1,82 @@
-const express = require('express');
-const pg = require('pg');
-const path = require('path');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import Piscina from 'piscina';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-// Rota específica para admin
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+app.use(cors());
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const piscina = new Piscina({
+  filename: path.join(__dirname, 'worker.js'),
 });
 
-app.get('/admin.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});// ═══════════════════════════════════════════════════════════════════
-// CONFIGURAÇÃO POSTGRESQL
-// ═══════════════════════════════════════════════════════════════════
-
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
-
-// Testa conexão
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('❌ ERRO na conexão PostgreSQL:', err.message);
-  } else {
-    console.log('✅ Conectado ao PostgreSQL');
+// Função para gerar código aleatório
+function codigoAleatório(len = 6) {
+  const personagens = 'ABCDEFGHJKMNPQRSTU';
+  let codigo = '';
+  for (let eu = 0; eu < len; eu++) {
+    codigo += personagens[Math.floor(Math.random() * personagens.length)];
   }
-});
-
-// ═══════════════════════════════════════════════════════════════════
-// CRIAR TABELAS (se não existirem)
-// ═══════════════════════════════════════════════════════════════════
-
-async function initDatabase() {
-  try {
-    // Tabela de códigos
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS codigos (
-        id SERIAL PRIMARY KEY,
-        codigo VARCHAR(6) UNIQUE NOT NULL,
-        usado BOOLEAN DEFAULT false,
-        criado_em TIMESTAMP DEFAULT NOW(),
-        usado_em TIMESTAMP,
-        nome_comprador VARCHAR(255),
-        email_comprador VARCHAR(255)
-      );
-    `);
-
-    // Tabela de planos gerados
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS planos (
-        id SERIAL PRIMARY KEY,
-        codigo_usado VARCHAR(6),
-        nome VARCHAR(255),
-        objetivo VARCHAR(50),
-        sexo VARCHAR(10),
-        idade INT,
-        peso DECIMAL(5,2),
-        altura INT,
-        rotina VARCHAR(100),
-        dias INT,
-        tempo VARCHAR(50),
-        nivel VARCHAR(50),
-        divisao VARCHAR(100),
-        foco VARCHAR(100),
-        estilo VARCHAR(100),
-        refeicoes INT,
-        tdee INT,
-        alvo_calorico INT,
-        proteina_g INT,
-        carbo_g INT,
-        gordura_g INT,
-        criado_em TIMESTAMP DEFAULT NOW(),
-        FOREIGN KEY(codigo_usado) REFERENCES codigos(codigo)
-      );
-    `);
-
-    console.log('✅ Banco de dados inicializado');
-  } catch (err) {
-    console.error('❌ Erro ao inicializar banco:', err.message);
-  }
+  return codigo;
 }
 
-initDatabase();
-
-// ═══════════════════════════════════════════════════════════════════
-// AUTENTICAÇÃO - Middleware
-// ═══════════════════════════════════════════════════════════════════
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'senha_padrao_change_me';
-
-function checkAdmin(req, res, next) {
-  const auth = req.headers['authorization'] || '';
-  if (auth !== ADMIN_PASSWORD) {
-    return res.status(401).json({ ok: false, reason: 'unauthorized' });
-  }
-  next();
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// API: CHECK-CODE
-// ═══════════════════════════════════════════════════════════════════
-
+// API: USAR-CÓDIGO (Cliente)
+// =================================================================
 app.post('/api/check-code', async (req, res) => {
   try {
     const { codigo } = req.body;
 
     if (!codigo) {
-      return res.status(400).json({ ok: false, reason: 'missing_code' });
+      return res.status(400).json({ OK: false, razão: 'Código não fornecido' });
     }
 
-    const result = await pool.query(
-      'SELECT * FROM codigos WHERE codigo = $1',
-      [codigo.toUpperCase()]
+    const resultado = await piscina.consulta(
+      'SELECT * FROM codigos WHERE UPPER(codigo) = UPPER(?)',
+      [codigo]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ ok: false, reason: 'code_not_found' });
+    if (resultado.length === 0) {
+      return res.status(400).json({ OK: false, razão: 'Código inválido' });
     }
 
-    const codeData = result.rows[0];
+    const codigoData = resultado[0];
 
-    if (codeData.usado) {
-      return res.status(400).json({ ok: false, reason: 'code_already_used' });
+    if (codigoData.usado) {
+      return res.status(400).json({ OK: false, razão: 'Código já utilizado' });
     }
 
-    return res.json({ ok: true, valid: true, buyerName: codeData.nome_comprador });
-
-  } catch (err) {
-    console.error('Erro em check-code:', err.message);
-    res.status(500).json({ ok: false, reason: 'server_error', message: err.message });
+    res.json({ OK: true, codigo: codigoData.codigo });
+  } catch (erro) {
+    console.error('Erro em check-code:', erro.message);
+    res.status(500).json({ OK: false, razão: 'Erro ao validar código' });
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// API: USE-CODE
-// ═══════════════════════════════════════════════════════════════════
-
+// API: USE-CODE (Marca como usado após validação)
 app.post('/api/use-code', async (req, res) => {
   try {
     const { codigo, buyerName, planoData } = req.body;
 
     if (!codigo) {
-      return res.status(400).json({ ok: false, reason: 'missing_code' });
+      return res.status(400).json({ OK: false, razão: 'Código não fornecido' });
     }
 
-    // Verifica se código existe
-    const checkResult = await pool.query(
-      'SELECT * FROM codigos WHERE codigo = $1',
-      [codigo.toUpperCase()]
-    );
-
-    if (checkResult.rows.length === 0) {
-      return res.status(404).json({ ok: false, reason: 'code_not_found' });
-    }
-
-    const codeData = checkResult.rows[0];
-
-    if (codeData.usado) {
-      return res.status(400).json({ ok: false, reason: 'code_already_used' });
-    }
-
-    // Marca como usado
-    const usedAt = new Date();
-    await pool.query(
-      'UPDATE codigos SET usado = true, usado_em = $1, nome_comprador = $2 WHERE codigo = $3',
-      [usedAt, buyerName || null, codigo.toUpperCase()]
+    // Marca como usado - APENAS esse código
+    const agora = new Date();
+    await piscina.consulta(
+      'UPDATE codigos SET usado = true, usado_em = ?, nome_do_comprador = COALESCE(?, "nulo") WHERE UPPER(codigo) = UPPER(?)',
+      [agora, buyerName || null, codigo]
     );
 
     // Salva dados do plano (opcional)
     if (planoData) {
-      await pool.query(
-        `INSERT INTO planos (
-          codigo_usado, nome, objetivo, sexo, idade, peso, altura, rotina,
-          dias, tempo, nivel, divisao, foco, estilo, refeicoes,
-          tdee, alvo_calorico, proteina_g, carbo_g, gordura_g
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+      await piscina.consulta(
+        'INSERT INTO planos (codigo_usado, nome, objetivo, sexo, idade, peso, altura, rot, dias, tempo, nivel, divisao, foco, estilo, refeitórios, tdee, alvo_calórico, proteina_g, carboidrato, g) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
           codigo.toUpperCase(),
           buyerName,
@@ -187,123 +85,89 @@ app.post('/api/use-code', async (req, res) => {
           planoData.idade,
           planoData.peso,
           planoData.altura,
-          planoData.rotina,
+          planoData.rot,
           planoData.dias,
           planoData.tempo,
           planoData.nivel,
-          planoData.divisao,
+          planoData.divisão,
           planoData.foco,
           planoData.estilo,
-          planoData.refeicoes,
+          planoData.refeitórios,
           planoData.tdee,
-          planoData.alvo_calorico,
+          planoData.alvo_calórico,
           planoData.proteina_g,
-          planoData.carbo_g,
-          planoData.gordura_g
+          planoData.carboidrato,
+          planoData.g
         ]
       );
     }
 
-    res.json({ ok: true, codigo, usedAt });
-
-  } catch (err) {
-    console.error('Erro em use-code:', err.message);
-    res.status(500).json({ ok: false, reason: 'server_error', message: err.message });
+    res.json({ OK: true, verdadeiro: codigo, usado_em: agora });
+  } catch (erro) {
+    console.error('Erro em use-code:', erro.message);
+    res.status(500).json({ OK: false, razão: 'Erro ao usar código' });
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// API: GENERATE-CODE (Admin)
-// ═══════════════════════════════════════════════════════════════════
+// API: GERAR-CÓDIGO (Administrador)
+// =================================================================
+app.publicar('/api/generate-code', checkAdmin, tentador => {
+  const { nome_do_comprador, email } = requisição.body;
 
-app.post('/api/generate-code', checkAdmin, async (req, res) => {
-  try {
-    const { buyerName, email } = req.body;
-
-    // Função pra gerar código aleatório
-    function randomCode(len = 6) {
-      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-      let code = '';
-      for (let i = 0; i < len; i++) {
-        code += chars[Math.floor(Math.random() * chars.length)];
-      }
-      return code;
+  // Função para gerar código aleatório
+  função codigoAleatório(len = 6) {
+    const personagens = 'ABCDEFGHJKMNPQRSTU';
+    deixar código = '';
+    para (deixar eu = 0; eu < len; eu++) {
+      código += personagens[Matemática.chão(Matemática.aleatório() * personagens.tamanho)];
     }
-
-    let codigo;
-    let tries = 0;
-
-    // Gera código único
-    do {
-      codigo = randomCode();
-      const exists = await pool.query('SELECT id FROM codigos WHERE codigo = $1', [codigo]);
-      if (exists.rows.length === 0) break;
-      tries++;
-    } while (tries < 10);
-
-    if (tries >= 10) {
-      return res.status(500).json({ ok: false, reason: 'could_not_generate_unique_code' });
-    }
-
-    // Insere no banco
-    await pool.query(
-      'INSERT INTO codigos (codigo, nome_comprador, email_comprador) VALUES ($1, $2, $3)',
-      [codigo, buyerName || null, email || null]
-    );
-
-    res.json({ ok: true, codigo });
-
-  } catch (err) {
-    console.error('Erro em generate-code:', err.message);
-    res.status(500).json({ ok: false, reason: 'server_error', message: err.message });
+    retornar código;
   }
-});
 
-// ═══════════════════════════════════════════════════════════════════
-// API: LIST-CODES (Admin)
-// ═══════════════════════════════════════════════════════════════════
-
-app.post('/api/list-codes', checkAdmin, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM codigos ORDER BY criado_em DESC'
-    );
+    const { nome_do_comprador, email } = req.body;
 
-    res.json({
-      ok: true,
-      codes: result.rows,
-      total: result.rows.length
+    if (!nome_do_comprador || !email) {
+      return res.status(400).json({ OK: false, razão: 'Nome e email obrigatórios' });
+    }
+
+    const codigo = codigoAleatório();
+    const criadoEm = new Date();
+
+    piscina.consulta(
+      'INSERT INTO codigos (codigo, nome_do_comprador, email, criado_em) VALUES (?, ?, ?, ?)',
+      [codigo, nome_do_comprador, email, criadoEm]
+    ).então(() => {
+      res.json({ OK: true, codigo, email });
+    }).capturar((erro) => {
+      console.erro('Erro ao gerar código:', erro.mensagem);
+      res.status(500).json({ OK: false, razão: 'Erro ao gerar código' });
     });
-
-  } catch (err) {
-    console.error('Erro em list-codes:', err.message);
-    res.status(500).json({ ok: false, reason: 'server_error', message: err.message });
+  } catch (erro) {
+    console.erro('Erro em generate-code:', erro.mensagem);
+    res.status(500).json({ OK: false, razão: 'Erro ao processar requisição' });
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// ADMIN DASHBOARD
-// ═══════════════════════════════════════════════════════════════════
+// Middleware: Verificar admin
+function checkAdmin(req, res, next) {
+  const { senha } = req.query;
+  if (senha === '01010924Clo#') {
+    next();
+  } else {
+    res.status(401).json({ OK: false, razão: 'Não autorizado' });
+  }
+}
+
+// Servir arquivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/admin.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// HEALTH CHECK
-// ═══════════════════════════════════════════════════════════════════
-
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// ═══════════════════════════════════════════════════════════════════
-// INICIAR SERVIDOR
-// ═══════════════════════════════════════════════════════════════════
-
+// Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-  console.log(`📊 Admin: http://localhost:${PORT}/admin.html`);
-  console.log(`🎯 Quiz: http://localhost:${PORT}/`);
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
