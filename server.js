@@ -69,8 +69,10 @@ app.post('/api/use-code', async (req, res) => {
     // Marca como usado - APENAS esse código
     const agora = new Date();
     await piscina.consulta(
-      'UPDATE codigos SET usado = true, usado_em = ?, nome_do_comprador = COALESCE(?, "nulo") WHERE UPPER(codigo) = UPPER(?)',
+  'UPDATE codigos SET usado = true, usado_em = ?, nome_do_comprador = COALESCE(?, "nulo") WHERE UPPER(codigo) = UPPER(?)',
   [agora, buyerName || null, codigo]
+);
+
 );
 
       [agora, buyerName || null, codigo]
