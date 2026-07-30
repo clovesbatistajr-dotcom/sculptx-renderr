@@ -3,105 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SculptX - Método</title>
+    <title>SculptX - Perguntas</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
-            width: 100%;
-            padding: 40px;
-            text-align: center;
-        }
-
-        .success-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            color: #27ae60;
-            margin-bottom: 15px;
-            font-size: 32px;
-        }
-
-        .message {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 16px;
-            line-height: 1.6;
-        }
-
-        .info-box {
-            background: #f0f0f0;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            text-align: left;
-        }
-
-        .info-box h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .info-box p {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); padding: 40px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 48px; margin-bottom: 10px; }
+        h1 { color: #333; margin-bottom: 10px; }
+        .progress { color: #666; font-size: 14px; margin-bottom: 20px; }
+        .progress-bar { width: 100%; height: 8px; background: #ddd; border-radius: 10px; overflow: hidden; margin-bottom: 30px; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.3s; }
+        .question-box { margin-bottom: 30px; }
+        .question-text { color: #333; font-size: 18px; font-weight: 500; margin-bottom: 20px; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option { padding: 12px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: all 0.3s; background: white; font-size: 14px; }
+        .option:hover { border-color: #667eea; background: #f5f5f5; }
+        .option.selected { border-color: #667eea; background: #667eea; color: white; }
+        .buttons { display: flex; gap: 10px; margin-top: 30px; }
+        button { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        .btn-prev { background: #ddd; color: #333; }
+        .btn-prev:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn-next { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-next:hover:not(:disabled) { transform: translateY(-2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .success-screen { display: none; text-align: center; }
+        .success-icon { font-size: 80px; margin-bottom: 20px; }
+        .success-screen h1 { color: #27ae60; margin-bottom: 10px; }
+        .success-screen p { color: #666; margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="success-icon">✅</div>
-        <h1>Bem-vindo!</h1>
-        <p class="message">Seu código foi validado com sucesso e marcado como utilizado. Você agora tem acesso ao Método SculptX.</p>
-
-        <div class="info-box">
-            <h3>📌 Informações Importantes:</h3>
-            <p>✓ Este código não poderá ser reutilizado</p>
-            <p>✓ Seu acesso está bloqueado ao banco de dados</p>
-            <p>✓ O sistema está funcionando corretamente</p>
+        <div class="header">
+            <div class="logo">🎯</div>
+            <h1>Método SculptX</h1>
+            <p class="progress">Pergunta <span id="current">1</span> de <span id="total">5</span></p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
         </div>
 
-        <button onclick="window.location.href = '/admin.html'">
-            Voltar ao Início
-        </button>
+        <div id="quizScreen">
+            <div class="question-box">
+                <div class="question-text" id="questionText"></div>
+                <div class="options" id="optionsContainer"></div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-prev" id="btnPrev" onclick="previousQuestion()" disabled>← Anterior</button>
+                <button class="btn-next" id="btnNext" onclick="nextQuestion()">Próxima →</button>
+            </div>
+        </div>
+
+        <div class="success-screen" id="successScreen">
+            <div class="success-icon">✅</div>
+            <h1>Perguntas Concluídas!</h1>
+            <p>Você respondeu todas as perguntas com sucesso!</p>
+            <button class="btn-next" onclick="window.location.href = '/admin.html'">Voltar ao Início</button>
+        </div>
     </div>
-</body>
-</html>
+
+    <script>
+        const questions = [
+            {
+                text: "Qual é o objetivo principal do Método SculptX?",
+                options: ["Perda de peso rápida", "Transformação corporal sustentável", "Apenas ganho de massa", "Dieta restritiva"],
