@@ -93,11 +93,12 @@
                 sucesso.textContent = '✅ Acesso autorizado! Redirecionando...';
                 sucesso.style.display = 'block';
 
+                window.__sculptxCodigo = codigo;
                 sessionStorage.setItem('sculptx_codigo', codigo);
 
                 setTimeout(() => {
                     window.location.href = '/index.html';
-                }, 2000);
+                }, 1000);
 
             } catch (err) {
                 console.error('Erro:', err);
