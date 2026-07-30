@@ -210,6 +210,8 @@ async function checkCode() {
     if (data.ok) {
       document.getElementById('codeForm').style.display = 'none';
       document.querySelector('.intro').style.display = 'block';
+      await fetch('/api/use-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: code }) });
+
     } else {
       errorDiv.textContent = 'Código inválido ou já utilizado!';
     }
