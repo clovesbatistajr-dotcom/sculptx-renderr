@@ -7,7 +7,308 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .container { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); max-width: 500px; width: 100%; padding: 40px; text-align: center; }
+        .container { b<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acesso - Método SculptX</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg:#070d0b;
+  --bg-1:#0e1c18;
+  --line:rgba(237,238,233,0.10);
+  --line-bright:rgba(159,190,175,0.22);
+  --emerald:#3E8F65;
+  --emerald-bright:#5FBE8B;
+  --emerald-glow:#4ADE80;
+  --ink:#EDEEE9;
+  --ink-dim:#9BA79F;
+  --ink-faint:#5E6864;
+  --amber:#D8B45C;
+  --error:#E07A6E;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+  background:var(--bg);
+  color:var(--ink-dim);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  -webkit-font-smoothing:antialiased;
+  padding:20px;
+}
+
+.login-container{
+  width:100%;
+  max-width:420px;
+  background:var(--bg-1);
+  border:1px solid var(--line-bright);
+  border-radius:20px;
+  padding:40px 28px;
+  text-align:center;
+}
+
+.logo-box{
+  margin-bottom:32px;
+}
+
+.logo-box .target{
+  font-size:48px;
+  margin-bottom:12px;
+}
+
+.logo-box .title{
+  font-family:'Fraunces',serif;
+  font-size:26px;
+  font-weight:600;
+  color:var(--ink);
+  margin-bottom:8px;
+}
+
+.logo-box .subtitle{
+  font-size:13px;
+  color:var(--ink-faint);
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+
+.form-group{
+  margin-bottom:24px;
+}
+
+.form-group label{
+  display:block;
+  font-size:12px;
+  color:var(--ink-dim);
+  margin-bottom:10px;
+  font-weight:600;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  text-align:left;
+}
+
+.form-group input{
+  width:100%;
+  padding:16px 18px;
+  border-radius:14px;
+  border:1px solid var(--line-bright);
+  background:var(--bg);
+  color:var(--ink);
+  font-size:17px;
+  font-family:'Inter',sans-serif;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  text-align:center;
+  transition:all .2s ease;
+}
+
+.form-group input:focus{
+  outline:none;
+  border-color:var(--emerald-bright);
+  box-shadow:0 0 0 2px rgba(95,190,139,0.15);
+}
+
+.form-group input::placeholder{
+  color:var(--ink-faint);
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+
+.error-box{
+  display:none;
+  background:rgba(224,122,110,0.1);
+  border:1px solid var(--error);
+  border-radius:12px;
+  padding:14px 16px;
+  margin-bottom:20px;
+  font-size:13px;
+  color:var(--error);
+  line-height:1.6;
+  text-align:left;
+}
+
+.error-box.show{
+  display:block;
+}
+
+.loading{
+  display:none;
+}
+
+.loading.active{
+  display:inline-block;
+  width:16px;
+  height:16px;
+  border:2px solid var(--line-bright);
+  border-top-color:var(--emerald-bright);
+  border-radius:50%;
+  animation:spin .6s linear infinite;
+  margin-right:8px;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+.submit-btn{
+  width:100%;
+  padding:16px 18px;
+  background:var(--emerald-bright);
+  color:var(--bg);
+  border:none;
+  border-radius:14px;
+  font-weight:700;
+  font-size:15px;
+  font-family:'Inter',sans-serif;
+  cursor:pointer;
+  transition:all .2s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
+.submit-btn:active{
+  transform:scale(0.98);
+}
+
+.submit-btn:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
+.info-box{
+  margin-top:28px;
+  padding-top:24px;
+  border-top:1px solid var(--line-bright);
+  font-size:12px;
+  color:var(--ink-faint);
+  line-height:1.6;
+}
+
+.info-box b{
+  color:var(--ink-dim);
+  font-weight:600;
+}
+</style>
+</head>
+<body>
+
+<div class="login-container">
+  <div class="logo-box">
+    <div class="target">🎯</div>
+    <div class="title">SculptX</div>
+    <div class="subtitle">Seu Plano Personalizado</div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <form id="loginForm">
+    <div class="form-group">
+      <label for="codigo">Código de Acesso</label>
+      <input 
+        type="text" 
+        id="codigo" 
+        placeholder="Digite seu código" 
+        autocomplete="off"
+        required
+      >
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">
+      <span class="loading" id="spinner"></span>
+      <span id="btnText">Acessar Plano</span>
+    </button>
+  </form>
+
+  <div class="info-box">
+    <b>Não tem código?</b><br>
+    Fale com seu personal via WhatsApp pra receber seu acesso.
+  </div>
+</div>
+
+<script>
+const WHATSAPP_NUMBER = '5538998298303';
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const codigo = document.getElementById('codigo').value.trim().toUpperCase();
+  const errorBox = document.getElementById('errorBox');
+  const submitBtn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btnText');
+
+  // Validação básica
+  if (!codigo || codigo.length < 3) {
+    errorBox.textContent = 'Digite um código válido.';
+    errorBox.classList.add('show');
+    return;
+  }
+
+  // Limpar erro anterior
+  errorBox.classList.remove('show');
+  
+  // Ativar loading
+  submitBtn.disabled = true;
+  spinner.classList.add('active');
+  btnText.textContent = 'Validando...';
+
+  try {
+    // Chamar API pra validar código
+    const response = await fetch('/api/check-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo })
+    });
+
+    const data = await response.json();
+
+    if (data.valid) {
+      // ✅ Código válido
+      // Armazenar código em sessionStorage
+      sessionStorage.setItem('sculptx_codigo', codigo);
+      
+      // Redirecionar pro quiz
+      window.location.href = '/index.html';
+    } else {
+      // ❌ Código inválido ou já usado
+      errorBox.textContent = data.message || 'Código inválido ou já utilizado.';
+      errorBox.classList.add('show');
+      
+      submitBtn.disabled = false;
+      spinner.classList.remove('active');
+      btnText.textContent = 'Acessar Plano';
+      document.getElementById('codigo').value = '';
+      document.getElementById('codigo').focus();
+    }
+  } catch (err) {
+    // Erro de rede/servidor
+    console.error('Erro:', err);
+    errorBox.textContent = 'Erro ao validar código. Tente novamente.';
+    errorBox.classList.add('show');
+    
+    submitBtn.disabled = false;
+    spinner.classList.remove('active');
+    btnText.textContent = 'Acessar Plano';
+  }
+});
+
+// Focus no input ao carregar
+document.getElementById('codigo').focus();
+</script>
+
+</body>
+</html>
+ackground: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); max-width: 500px; width: 100%; padding: 40px; text-align: center; }
         .logo { font-size: 48px; margin-bottom: 20px; }
         h1 { color: #333; margin-bottom: 10px; font-size: 28px; }
         .subtitle { color: #666; margin-bottom: 30px; font-size: 14px; }
