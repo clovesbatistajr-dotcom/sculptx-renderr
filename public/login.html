@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SculptX - Acesso</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); max-width: 500px; width: 100%; padding: 40px; text-align: center; }
+        .logo { font-size: 48px; margin-bottom: 20px; }
+        h1 { color: #333; margin-bottom: 10px; font-size: 28px; }
+        .subtitle { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px; }
+        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        input:focus { outline: none; border-color: #667eea; }
+        button { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        button:hover:not(:disabled) { transform: translateY(-2px); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .loading { display: none; color: #667eea; margin-top: 15px; font-size: 14px; }
+        .error { display: none; color: #e74c3c; margin-top: 15px; padding: 12px; background: #fadbd8; border-radius: 8px; font-size: 14px; }
+        .success { display: none; color: #27ae60; margin-top: 15px; padding: 12px; background: #d5f4e6; border-radius: 8px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🎯</div>
+        <h1>Método SculptX</h1>
+        <p class="subtitle">Digite seu Código de Acesso</p>
+        <div class="form-group">
+            <label for="codigo">Código de Acesso:</label>
+            <input type="text" id="codigo" placeholder="Ex: ABC123" autocomplete="off">
+        </div>
+        <button id="btnEntrar" onclick="validarCodigo()">Entrar</button>
+        <div class="loading" id="loading">⏳ Validando código...</div>
+        <div class="error" id="erro"></div>
+        <div class="success" id="sucesso"></div>
+    </div>
+    <script>
+        async function validarCodigo() {
+            const codigo = document.getElementById('codigo').value.trim().toUpperCase();
+            const btnEntrar = document.getElementById('btnEntrar');
+            const loading = document.getElementById('loading');
+            const erro = document.getElementById('erro');
+            const sucesso = document.getElementById('sucesso');
+
+            erro.style.display = 'none';
+            sucesso.style.display = 'none';
+
+            if (!codigo) {
+                erro.textContent = '❌ Digite um código';
+                erro.style.display = 'block';
+                return;
+            }
+
+            btnEntrar.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                const checkResponse = await fetch('/api/check-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo })
+                });
+
+                const checkData = await checkResponse.json();
+
+                if (!checkData.ok) {
+                    erro.textContent = '❌ Código inválido ou já utilizado!';
+                    erro.style.display = 'block';
+                    btnEntrar.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                const useResponse = await fetch('/api/use-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo, buyerName: 'Aluno' })
+                });
+
+                const useData = await useResponse.json();
+
+                if (!useData.ok) {
+                    erro.textContent = '❌ Erro ao ativar código';
+                    erro.style.display = 'block';
+                    btnEntrar.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                sucesso.textContent = '✅ Acesso autorizado! Redirecionando...';
+                sucesso.style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = '/quiz.html';
+                }, 2000);
+
+            } catch (err) {
+                console.error('Erro:', err);
+                erro.textContent = '❌ Erro na conexão. Tente novamente.';
+                erro.style.display = 'block';
+                btnEntrar.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        document.getElementById('codigo').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') validarCodigo();
+        });
+    </script>
+</body>
+</html>
