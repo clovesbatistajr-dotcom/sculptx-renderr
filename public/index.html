@@ -178,6 +178,55 @@ input::placeholder{color:var(--ink-faint);}
 </head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <body>
+<!-- Formulário de Código -->
+<div id="codeForm" class="code-form-container">
+  <div class="code-form">
+    <h2>Digite seu Código de Acesso</h2>
+    <input type="text" id="codeInput" placeholder="Ex: HZN7ME" maxlength="6">
+    <button onclick="checkCode()">Entrar</button>
+    <div id="errorMessage"></div>
+  </div>
+</div>
+
+<script>
+async function checkCode() {
+  const code = document.getElementById('codeInput').value.toUpperCase();
+  const errorDiv = document.getElementById('errorMessage');
+  
+  if (!code) {
+    errorDiv.textContent = 'Digite o código!';
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/check-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo: code })
+    });
+    
+    const data = await response.json();
+    
+    if (data.ok) {
+      document.getElementById('codeForm').style.display = 'none';
+      document.querySelector('.intro').style.display = 'block';
+    } else {
+      errorDiv.textContent = 'Código inválido ou já utilizado!';
+    }
+  } catch (err) {
+    errorDiv.textContent = 'Erro ao validar.';
+  }
+}
+</script>
+
+<style>
+.code-form-container { display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--bg); }
+.code-form { background:white; padding:40px; border-radius:12px; text-align:center; max-width:400px; }
+.code-form h2 { color:var(--emerald); margin-bottom:20px; }
+.code-form input { width:100%; padding:12px; margin-bottom:15px; border:2px solid var(--emerald); border-radius:8px; font-size:16px; text-transform:uppercase; }
+.code-form button { width:100%; padding:12px; background:var(--emerald); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; }
+#errorMessage { color:#e74c3c; margin-top:10px; }
+</style>
 
 <header>
   <div class="back-row"><button class="back-btn" id="backBtn">‹</button></div>
