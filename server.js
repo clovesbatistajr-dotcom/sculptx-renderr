@@ -6,8 +6,14 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+// Rota específica para admin
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
-// ═══════════════════════════════════════════════════════════════════
+app.get('/admin.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});// ═══════════════════════════════════════════════════════════════════
 // CONFIGURAÇÃO POSTGRESQL
 // ═══════════════════════════════════════════════════════════════════
 
